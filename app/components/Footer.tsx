@@ -8,7 +8,7 @@ export default function Footer() {
   useEffect(() => {
     const _stones: React.ReactElement[] = []
 
-    // CONFIG (same as your previous config)
+    // CONFIG
     const CONFIG = {
       vertexCounts: [5, 6, 7],
       radiusRange: [35, 55],

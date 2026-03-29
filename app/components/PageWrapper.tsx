@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTransition } from '../contexts/TransitionContext';
-import { useWind } from '../contexts/WindContext';
+import { useWind, DEFAULT_WIND_SPEED } from '../contexts/WindContext';
 
 // useLayoutEffect is safe in client components; suppress SSR warning with this alias
 const useClientLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -54,6 +54,15 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     el.style.transform = 'translateX(-100vw)';
     el.style.opacity = '0';
   }, [isLeaving]);
+
+  // Wind ramp-down: after each navigation wait 500ms then settle back to default.
+  // This replaces the WindRampDown component — no need to add it per-page.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      targetWindSpeedRef.current = DEFAULT_WIND_SPEED;
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [pathname, targetWindSpeedRef]);
 
   return (
     // position + z-index: 2 ensures this stacking context sits above the fixed

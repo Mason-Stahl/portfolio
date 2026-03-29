@@ -1,5 +1,4 @@
 import TransitionLink from '../components/TransitionLink';
-import WindRampDown from '../components/WindRampDown';
 
 export default function NGIPage() {
   return (
@@ -16,7 +15,6 @@ export default function NGIPage() {
         fontFamily: "'Space Mono', monospace",
       }}
     >
-      <WindRampDown />
       <h1 style={{ fontSize: '3rem', fontWeight: 'bold' }}>NGI</h1>
       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.1rem' }}>Design</p>
       <TransitionLink href="/" className="text-sm opacity-50 hover:opacity-100 transition-opacity">

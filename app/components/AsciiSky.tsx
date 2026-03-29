@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { useWind } from '../contexts/WindContext';
-import SkyControls from './SkyControls';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useWind, DEFAULT_WIND_SPEED } from '../contexts/WindContext';
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const DEFAULT_WIND_SPEED = 0.6;
 const ROWS_PER_PX        = 1 / 14.85;
 
 const CHARS = [' ', ' ', ' ', '.', '·', '˙', '·', '.', ':', '·', '.', '~', '-', '~', '·', '.'];
@@ -27,6 +26,16 @@ const SKY_PALETTES: Record<number, { bg: string; lo: string; hi: string }> = {
   21: { bg: '#060410', lo: '#1a1040', hi: '#2a1860' },
   22: { bg: '#03050e', lo: '#0c1530', hi: '#152040' },
   23: { bg: '#02060f', lo: '#0a1832', hi: '#0f2045' },
+};
+
+// ─── SCRUBBER CONFIG ──────────────────────────────────────────────────────────
+// Section IDs where the time scrubber is visible. Add/remove IDs to control
+// which sections show the scrubber. The scrubber fades whenever any listed
+// section enters or leaves the viewport — so listing two adjacent sections
+// (e.g. 'hero' and 'ai-applications') keeps it visible across both.
+const SCRUBBER_CONFIG = {
+  visibleInSections: ['hero'] as string[],
+  fadeTransitionMs: 200,
 };
 
 // ─── PURE HELPERS ─────────────────────────────────────────────────────────────
@@ -105,7 +114,10 @@ export default function AsciiSky() {
   const timePhaseRef = useRef<HTMLSpanElement>(null);
   const scrubberRef  = useRef<HTMLInputElement>(null);
   const { targetWindSpeedRef } = useWind();
+  const pathname = usePathname();
+  const [scrubberVisible, setScrubberVisible] = useState(false);
 
+  // ── ASCII wind loop ──────────────────────────────────────────────────────────
   useEffect(() => {
     const bg = bgRef.current;
     if (!bg) return;
@@ -166,7 +178,6 @@ export default function AsciiSky() {
       const dt = lastTs === 0 ? 0 : Math.min(ts - lastTs, 50);
       lastTs = ts;
 
-      // Smoothly lerp wind speed toward the target (tau ≈ 200ms)
       const k = dt === 0 ? 0 : 1 - Math.exp(-dt / 200);
       currentWindSpeed += (targetWindSpeedRef.current - currentWindSpeed) * k;
 
@@ -191,10 +202,8 @@ export default function AsciiSky() {
       for (let r = 0; r < ROWS; r++) {
         const rowFrac = r / ROWS;
         const rowDriftX = driftX * rowSpeeds[r];
-
         let line = '';
         let totalDensity = 0;
-
         for (let c = 0; c < COLS; c++) {
           const raw = fbm(c * 0.09 + rowDriftX, r * 0.14 + driftY);
           const vGrad = 1 - Math.abs(rowFrac - 0.45) * 1.2;
@@ -203,7 +212,6 @@ export default function AsciiSky() {
           const idx = Math.floor(density * (CHARS.length - 1));
           line += CHARS[Math.max(0, Math.min(CHARS.length - 1, idx))];
         }
-
         const avgDensity = totalDensity / COLS;
         const colorT = avgDensity * 0.7 + (1 - rowFrac) * 0.15;
         const col = lerpColor(palette.lo, palette.hi, Math.max(0, Math.min(1, colorT)));
@@ -214,7 +222,6 @@ export default function AsciiSky() {
       animFrame = requestAnimationFrame(loop);
     }
 
-    // Scrubber wiring — refs are passed down to SkyControls which owns the DOM elements
     const scrubber = scrubberRef.current;
     const onScrub = () => { if (scrubber) simTime = parseFloat(scrubber.value); };
     const onDblClick = () => {
@@ -243,6 +250,37 @@ export default function AsciiSky() {
     };
   }, [targetWindSpeedRef]);
 
+  // ── Scrubber visibility — watches SCRUBBER_CONFIG.visibleInSections ──────────
+  // Re-runs on pathname change so observers are rebuilt when the DOM changes.
+  useEffect(() => {
+    const targets = SCRUBBER_CONFIG.visibleInSections
+      .map(id => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (targets.length === 0) {
+      setScrubberVisible(false);
+      return;
+    }
+
+    const visible = new Set<string>();
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = (entry.target as HTMLElement).id;
+          if (entry.isIntersecting) visible.add(id);
+          else visible.delete(id);
+        }
+        setScrubberVisible(visible.size > 0);
+      },
+      { threshold: 0.3 }
+    );
+
+    targets.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, [pathname]);
+
+  // ─── RENDER ─────────────────────────────────────────────────────────────────
+
   return (
     <>
       {/* ASCII canvas */}
@@ -263,12 +301,67 @@ export default function AsciiSky() {
         }}
       />
 
-      {/* SkyControls owns the scrubber + time display, shows only while hero is visible */}
-      <SkyControls
-        scrubberRef={scrubberRef}
-        timeValRef={timeValRef}
-        timePhaseRef={timePhaseRef}
-      />
+      {/* Time indicator */}
+      <div style={{
+        position: 'fixed',
+        bottom: '2rem',
+        right: '2.5rem',
+        zIndex: 10,
+        textAlign: 'right',
+        fontFamily: "'Space Mono', monospace",
+        pointerEvents: 'none',
+        opacity: scrubberVisible ? 1 : 0,
+        transition: `opacity ${SCRUBBER_CONFIG.fadeTransitionMs}ms ease`,
+      }}>
+        <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', display: 'block', marginBottom: '0.25rem' }}>
+          Sky time
+        </span>
+        <span ref={timeValRef} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)' }}>—</span>
+        <span ref={timePhaseRef} style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', display: 'block', marginTop: '0.2rem' }}>—</span>
+      </div>
+
+      {/* Time scrubber */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontFamily: "'Space Mono', monospace",
+          opacity: scrubberVisible ? 1 : 0,
+          pointerEvents: scrubberVisible ? 'auto' : 'none',
+          transition: `opacity ${SCRUBBER_CONFIG.fadeTransitionMs}ms ease`,
+        }}
+        onPointerDown={e => e.stopPropagation()}
+        onTouchStart={e => e.stopPropagation()}
+      >
+        <span style={{ fontSize: '0.55rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+          Drag to preview time of day
+        </span>
+        <input
+          ref={scrubberRef}
+          type="range"
+          min="0"
+          max="23.99"
+          step="0.1"
+          defaultValue="-1"
+          style={{
+            WebkitAppearance: 'none',
+            width: '200px',
+            height: '2px',
+            background: 'rgba(255,255,255,0.15)',
+            outline: 'none',
+            borderRadius: '2px',
+            cursor: 'pointer',
+            touchAction: 'none',
+          }}
+        />
+      </div>
     </>
   );
 }

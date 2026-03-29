@@ -1,7 +1,6 @@
 import Footer from './components/Footer'
 import ProjectsSection from "./components/ProjectSection";
 import ScrollLink from "./components/ScrollLink";
-import WindRampDown from "./components/WindRampDown";
 
 const dashboardProjects = [
   {
@@ -25,7 +24,6 @@ const designProjects = [
 export default function PortfolioLanding() {
   return (
     <div className="h-screen overflow-y-scroll snap-y snap-mandatory">
-      <WindRampDown />
       {/* Hero Section */}
       <section id="hero" className="snap-start h-screen flex flex-col justify-center items-center relative px-6">
         <div className="absolute top-[20%] w-full text-center" style={{ zIndex: 2 }}>
@@ -62,7 +60,6 @@ export default function PortfolioLanding() {
         </div>
       </section>
 
-      {/* Project sections — position: relative + z-index keeps them above the fixed AmbientBirds layer */}
       <section id="ai-applications" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
         <ProjectsSection title="AI Applications" projects={aiProjects} />
       </section>
@@ -75,7 +72,6 @@ export default function PortfolioLanding() {
         <ProjectsSection title="Designs" projects={designProjects} />
       </section>
 
-      {/* Footer — section 5, not reachable via hero nav */}
       <section id="footer" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
         <Footer />
       </section>
