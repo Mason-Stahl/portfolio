@@ -14,13 +14,89 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #7fbfc1;
     --foreground: #ededed;
-  }
+  } 
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ============================================================================
+   AMBIENT BIRDS STYLES
+   ============================================================================ */
+
+.bird-container {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+  animation: fly var(--duration) linear var(--delay) forwards;
+}
+
+.bird-bobbing {
+  color: rgba(0, 0, 0, 0.6);
+  animation: bob var(--bobbing-speed) ease-in-out var(--bobbing-offset) infinite;
+}
+
+@keyframes fly {
+  from {
+    transform: translateX(0);
+  }
+  to { 
+    transform: translateX(calc(var(--end-x) - var(--start-x, 0px)));
+  }
+}
+
+@keyframes bob {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(var(--bobbing-amplitude)); 
+  }
+}
+
+.wing-left, .wing-right {
+  transform-origin: 12px 8px;
+}
+
+.wing-left {
+  animation: flap-left 0.4s ease-in-out infinite;
+}
+
+.wing-right {
+  animation: flap-right 0.4s ease-in-out infinite;
+}
+
+@keyframes flap-left {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(-35deg); }
+}
+
+@keyframes flap-right {
+  0%, 100% { transform: rotate(15deg); }
+  50% { transform: rotate(35deg); }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .bird-container {
+    animation-duration: calc(var(--duration) * 2);
+  }
+  .bird-bobbing {
+    animation: none;
+  }
+  .wing-left, .wing-right {
+    animation: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .bird-bobbing {
+    color: rgba(255, 255, 255, 0.4);
+  }
 }
