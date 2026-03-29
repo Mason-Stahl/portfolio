@@ -1,15 +1,33 @@
-import Link from 'next/link';
-import AmbientBirds from './components/AmbientBirds';
-import AsciiSky from './components/AsciiSky';
 import Footer from './components/Footer'
+import ProjectsSection from "./components/ProjectSection";
+import ScrollLink from "./components/ScrollLink";
+import WindRampDown from "./components/WindRampDown";
+
+const dashboardProjects = [
+  {
+    title: "Vegan Dashboard",
+    description: "Data-driven vegan insights",
+    href: "/vegan_dash",
+  },
+];
+
+const aiProjects = [
+  { title: "At What Cost", href: "/awc" },
+  { title: "To The Death", href: "/ttd" },
+];
+
+const designProjects = [
+  { title: "Root", href: "/root", description: "Testing this"},
+  { title: "TAK", href: "/tak" },
+  { title: "NGI", href: "/ngi" },
+];
 
 export default function PortfolioLanding() {
   return (
     <div className="h-screen overflow-y-scroll snap-y snap-mandatory">
+      <WindRampDown />
       {/* Hero Section */}
-      <section className="snap-start h-screen flex flex-col justify-center items-center relative px-6">
-        <AsciiSky />
-        <AmbientBirds />
+      <section id="hero" className="snap-start h-screen flex flex-col justify-center items-center relative px-6">
         <div className="absolute top-[20%] w-full text-center" style={{ zIndex: 2 }}>
           <h1 className="text-6xl md:text-7xl font-bold tracking-tight">
             Mason Stahl
@@ -17,24 +35,24 @@ export default function PortfolioLanding() {
         </div>
         <div className="absolute top-[40%] w-full" style={{ zIndex: 2 }}>
           <nav className="flex justify-center items-center gap-10 md:gap-24 flex-wrap px-4">
-            <Link 
-              href="/ai-applications"
+            <ScrollLink
+              targetId="ai-applications"
               className="text-2xl md:text-3xl font-medium hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               AI Applications
-            </Link>
-            <Link 
-              href="/designs"
+            </ScrollLink>
+            <ScrollLink
+              targetId="designs"
               className="text-2xl md:text-3xl font-medium hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               Designs
-            </Link>
-            <Link 
-              href="/dashboards"
+            </ScrollLink>
+            <ScrollLink
+              targetId="dashboards"
               className="text-2xl md:text-3xl font-medium hover:opacity-70 transition-opacity duration-200 cursor-pointer"
             >
               Dashboards
-            </Link>
+            </ScrollLink>
           </nav>
         </div>
         <div className="absolute bottom-32 animate-bounce">
@@ -44,16 +62,23 @@ export default function PortfolioLanding() {
         </div>
       </section>
 
-  {/* footer */}
-  <section className="snap-start h-screen flex flex-col justify-end relative">
-  
-  </section>
+      {/* Project sections — position: relative + z-index keeps them above the fixed AmbientBirds layer */}
+      <section id="ai-applications" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <ProjectsSection title="AI Applications" projects={aiProjects} />
+      </section>
 
-  {/* footer */}
-  <section className="snap-start h-screen flex flex-col justify-end relative">
-    <Footer />
-  </section>
+      <section id="dashboards" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <ProjectsSection title="Dashboards" projects={dashboardProjects} />
+      </section>
 
-</div>
+      <section id="designs" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <ProjectsSection title="Designs" projects={designProjects} />
+      </section>
+
+      {/* Footer — section 5, not reachable via hero nav */}
+      <section id="footer" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <Footer />
+      </section>
+    </div>
   );
 }

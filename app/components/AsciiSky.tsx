@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useWind } from '../contexts/WindContext';
+import SkyControls from './SkyControls';
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-// Characters drifting per second — 0 = static, 2 = gentle breeze, 8 = strong wind
-const WIND_CHARS_PER_SEC = .5;
+const DEFAULT_WIND_SPEED = 0.6;
 const ROWS_PER_PX        = 1 / 14.85;
 
 const CHARS = [' ', ' ', ' ', '.', '·', '˙', '·', '.', ':', '·', '.', '~', '-', '~', '·', '.'];
@@ -99,10 +100,11 @@ function phaseName(h: number): string {
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 
 export default function AsciiSky() {
-  const bgRef       = useRef<HTMLDivElement>(null);
-  const timeValRef  = useRef<HTMLSpanElement>(null);
-  const timePhaseRef= useRef<HTMLSpanElement>(null);
-  const scrubberRef = useRef<HTMLInputElement>(null);
+  const bgRef        = useRef<HTMLDivElement>(null);
+  const timeValRef   = useRef<HTMLSpanElement>(null);
+  const timePhaseRef = useRef<HTMLSpanElement>(null);
+  const scrubberRef  = useRef<HTMLInputElement>(null);
+  const { targetWindSpeedRef } = useWind();
 
   useEffect(() => {
     const bg = bgRef.current;
@@ -110,12 +112,13 @@ export default function AsciiSky() {
 
     let W = 0, H = 0, COLS = 0, ROWS = 0;
     let rowEls:    HTMLSpanElement[] = [];
-    let rowSpeeds: number[] = [];   // per-row drift rate multiplier
+    let rowSpeeds: number[] = [];
     let animFrame: number | null = null;
     let simTime:   number | null = null;
     let lastTs = 0;
-    let driftX = 0;  // global horizontal noise coordinate offset
-    let driftY = 0;  // global vertical noise coordinate offset (slow)
+    let driftX = 0;
+    let driftY = 0;
+    let currentWindSpeed = DEFAULT_WIND_SPEED;
 
     function getHour(): number {
       if (simTime !== null) return simTime;
@@ -124,17 +127,16 @@ export default function AsciiSky() {
     }
 
     function init() {
+      if (!bg) return;
       W = window.innerWidth;
       H = window.innerHeight;
 
-      // Measure actual rendered character width to fill the screen precisely
       const probe = document.createElement('span');
       probe.style.cssText = "font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.05em;position:absolute;visibility:hidden;white-space:pre";
       probe.textContent = 'X'.repeat(200);
       document.body.appendChild(probe);
       const measured = probe.offsetWidth / 200;
       document.body.removeChild(probe);
-      // Guard against 0 (font not yet loaded) with a safe fallback
       const charWidth = measured > 2 ? measured : 11.5;
 
       COLS = Math.ceil(W / charWidth) + 8;
@@ -151,7 +153,6 @@ export default function AsciiSky() {
         el.style.cssText = `position:absolute;left:0;width:100%;display:block;top:${r * 14.85}px`;
         bg.appendChild(el);
         rowEls.push(el);
-        // Rows near the top drift faster (atmospheric parallax)
         const t = r / ROWS;
         rowSpeeds.push((0.4 + Math.random() * 0.6) * (1 - t * 0.5));
       }
@@ -162,9 +163,12 @@ export default function AsciiSky() {
     }
 
     function loop(ts: number) {
-      // First frame: sync timestamp without advancing drift (prevents initial spike)
       const dt = lastTs === 0 ? 0 : Math.min(ts - lastTs, 50);
       lastTs = ts;
+
+      // Smoothly lerp wind speed toward the target (tau ≈ 200ms)
+      const k = dt === 0 ? 0 : 1 - Math.exp(-dt / 200);
+      currentWindSpeed += (targetWindSpeedRef.current - currentWindSpeed) * k;
 
       const hour    = getHour();
       const palette = getPalette(hour);
@@ -179,16 +183,13 @@ export default function AsciiSky() {
         timePhaseRef.current.textContent = phaseName(hour);
       }
 
-      // Advance global drift — sinusoidal gust modulates horizontal speed
-      const windPerMs = WIND_CHARS_PER_SEC / 1000;
+      const windPerMs = currentWindSpeed / 1000;
       const globalGust = 1 + 0.3 * Math.sin(ts * 0.0004);
       driftX += windPerMs * dt * globalGust;
-      driftY += windPerMs * dt * 0.04; // very slow vertical creep
+      driftY += windPerMs * dt * 0.04;
 
       for (let r = 0; r < ROWS; r++) {
         const rowFrac = r / ROWS;
-        // Each row samples the noise field at its own horizontal offset,
-        // creating parallax without physically scrolling any DOM element
         const rowDriftX = driftX * rowSpeeds[r];
 
         let line = '';
@@ -203,7 +204,6 @@ export default function AsciiSky() {
           line += CHARS[Math.max(0, Math.min(CHARS.length - 1, idx))];
         }
 
-        // One color per row — eliminates all nested span overhead
         const avgDensity = totalDensity / COLS;
         const colorT = avgDensity * 0.7 + (1 - rowFrac) * 0.15;
         const col = lerpColor(palette.lo, palette.hi, Math.max(0, Math.min(1, colorT)));
@@ -214,7 +214,7 @@ export default function AsciiSky() {
       animFrame = requestAnimationFrame(loop);
     }
 
-    // scrubber wiring
+    // Scrubber wiring — refs are passed down to SkyControls which owns the DOM elements
     const scrubber = scrubberRef.current;
     const onScrub = () => { if (scrubber) simTime = parseFloat(scrubber.value); };
     const onDblClick = () => {
@@ -228,7 +228,6 @@ export default function AsciiSky() {
       scrubber.value = String(now.getHours() + now.getMinutes()/60);
     }
 
-    // resize
     let resizeTimer: ReturnType<typeof setTimeout>;
     const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(init, 150); };
     window.addEventListener('resize', onResize);
@@ -242,7 +241,7 @@ export default function AsciiSky() {
       scrubber?.removeEventListener('dblclick', onDblClick);
       document.body.style.background = '';
     };
-  }, []);
+  }, [targetWindSpeedRef]);
 
   return (
     <>
@@ -264,57 +263,12 @@ export default function AsciiSky() {
         }}
       />
 
-      {/* Time indicator */}
-      <div style={{
-        position: 'fixed',
-        bottom: '2rem',
-        right: '2.5rem',
-        zIndex: 10,
-        textAlign: 'right',
-        fontFamily: "'Space Mono', monospace",
-        pointerEvents: 'none',
-      }}>
-        <span style={{ fontSize: '0.6rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', display: 'block', marginBottom: '0.25rem' }}>
-          Sky time
-        </span>
-        <span ref={timeValRef} style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.95)' }}>—</span>
-        <span ref={timePhaseRef} style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.55)', display: 'block', marginTop: '0.2rem' }}>—</span>
-      </div>
-
-      {/* Time scrubber */}
-      <div style={{
-        position: 'fixed',
-        bottom: '2rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontFamily: "'Space Mono', monospace",
-      }}>
-        <span style={{ fontSize: '0.55rem', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-          Drag to preview time of day
-        </span>
-        <input
-          ref={scrubberRef}
-          type="range"
-          min="0"
-          max="23.99"
-          step="0.1"
-          defaultValue="-1"
-          style={{
-            WebkitAppearance: 'none',
-            width: '200px',
-            height: '2px',
-            background: 'rgba(255,255,255,0.15)',
-            outline: 'none',
-            borderRadius: '2px',
-            cursor: 'pointer',
-          }}
-        />
-      </div>
+      {/* SkyControls owns the scrubber + time display, shows only while hero is visible */}
+      <SkyControls
+        scrubberRef={scrubberRef}
+        timeValRef={timeValRef}
+        timePhaseRef={timePhaseRef}
+      />
     </>
   );
 }

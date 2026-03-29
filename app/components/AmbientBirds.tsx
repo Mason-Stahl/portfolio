@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { useTransition } from '../contexts/TransitionContext';
 
 // ============================================================================
 // CONFIGURATION - Edit these values to customize bird behavior
@@ -247,6 +249,10 @@ export default function AmbientBirds() {
   const [birds, setBirds] = useState<BirdData[]>([]);
   const birdIdCounter = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isFirstMount = useRef(true);
+  const { isLeaving } = useTransition();
+  const pathname = usePathname();
 
   const spawnFormation = () => {
     const newBirds = generateFormation(window.innerWidth, birdIdCounter);
@@ -255,14 +261,43 @@ export default function AmbientBirds() {
 
   const removeBird = (id: number) => setBirds(prev => prev.filter(bird => bird.id !== id));
 
+  // Initial spawn + interval
   useEffect(() => {
     spawnFormation();
     intervalRef.current = setInterval(() => spawnFormation(), CONFIG.spawnInterval + Math.random() * 4000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
+  // Slide birds out to the left when a transition starts
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (isLeaving) {
+      el.style.transition = 'transform 0.5s ease';
+      el.style.transform = 'translateX(-100vw)';
+    }
+  }, [isLeaving]);
+
+  // On route change: snap container back, wipe all current birds, spawn a fresh group.
+  // Skip the initial mount — the empty-deps effect above handles the first spawn.
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    const el = containerRef.current;
+    if (el) {
+      el.style.transition = 'none';
+      el.style.transform = 'translateX(0)';
+    }
+    setBirds([]);
+    const timer = setTimeout(spawnFormation, 200);
+    return () => clearTimeout(timer);
+  }, [pathname]);
+
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
         inset: 0,

@@ -8,6 +8,8 @@
 - app/components/AmbientBirds.tsx - Animating bird formations across top of page
 - app/components/Footer.tsx - Randomly generated rock formations
 - app/components/AsciiSky.tsx - Fluid wind simulation, customizable speed, and color grading gradient based on time of day.
+- app/components/ProjectSectin.tsx - Variable layout to desplay portolfio items
+- app/components/XrayLeaf.tsx - Leaf that can be hovered over to reveal circuit running underneath it. 
 
 ### Design
 
@@ -20,30 +22,53 @@
 - The ASCII wind layer is a canvas/DOM hybrid challenge. 
 - The animals and scene as SVG + GSAP — it layers cleanly over the ASCII, stays 2D which matches the aesthetic, and the performance cost is predictable.
 
-### Linking
+### Linking + Sections
 
-- Dashboards
-    - Vegan Dashboard 
-        - (in page: portfolio.domain.com/vegan_dash)
-- Ai Applications
+1. Hero
+    - Name
+    - 3 areas (AI / Designs / Dashboards)
+
+2. Ai Applications
     - AWC
-        - (subdomain: awc.domain.com)
+        - Click to: (in page: domain.com/awc)
+            - Link to (subdomain: awc.domain.com)
     - TTD
-        - (subdomain: ttd.domain.com)
-- Designs
+        - Click to: (in page: domain.com/ttd)
+            - Link to (subdomain: ttd.domain.com)
+3. Dashboards
+    - Vegan Dashboard 
+        - Click to: (in page: portfolio.domain.com/vegan_dash)
+4. Designs
     - Root
         - (undecided)
     - TAK
-        - (in page: portfolio.domain.com/tak)
+        - Click to: (in page: portfolio.domain.com/tak)
     - NGI
-        - (in page: portfolio.domain.com/ngi)
+        - Click to: (in page: portfolio.domain.com/ngi)
+
+5. Footer
+    -  Rightside- Mountains in background, river flowing to pond in foreground, turtle on log in pond. Leftside- Deer overlooking, tail wagging, one sitting looking out too, Middle - valley going around pond, fox runs around. 
+    - Bottom, actual footer - contact info.
+
+### Page Transistioning
+
+In page: 
+- wind picks up speed, content slides out in that direction...
+- ...new page loads with wind at same high speed, wind slows down to normal speed as content slides in from direction wind is blowing
+- 1s animation out. (.5s fadeout, .5s wind speed)
+- 1s animation in. (.5s wind speed, .5s fadein)
+
+Subdomain: Normal link (opens in new tab)
 
 ### To Do
 
 - include polygon animals, a deer standing waving its tail and one sitting with its head up, couple turtles in background, ‘if all goes well and is easy, maybe a fox running across screen’ 
 - in the background, mountains and a little river running from them into the foreground, river didn’t have to be animated but if it has a little shimmer of life it could be nice
-
+- Project linking, project subpages, 
+- Deploy to synology
+- cloudflare route www.domain -> www.portfolio.domain
+ 
 ### Done
 
-- ascii wind background color, Each row drifts at a slightly different speed with a sinusoidal gust pulse, so it has that layered parallax quality you'd want — faster near the top (higher altitude), slower at the bottom.
+- ascii wind background color, Each row drifts at a slightly different speed with a sinusoidal gust pulse, so it has that layered parallax quality — faster near the top (higher altitude), slower at the bottom.
 
