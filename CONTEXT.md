@@ -10,6 +10,12 @@
 - app/components/AsciiSky.tsx - Fluid wind simulation, customizable speed, and color grading gradient based on time of day.
 - app/components/ProjectSectin.tsx - Variable layout to desplay portolfio items
 - app/components/XrayLeaf.tsx - Leaf that can be hovered over to reveal circuit running underneath it. 
+- app/components/ScrollLink.tsx - page.tsx is a server component so it can't have onClick. This is the minimal client component required to call scrollIntoView on the snap container sections. Can't be inlined.
+- app/components/TransitionLink.tsx - Intercepts link clicks, ramps wind to 4, sets isLeaving = true, waits 1s then navigates. The core of the whole transition system.
+- app/components/PageWrapper.tsx - (1) sets z-index: 2 so page content stacks above birds (2) slides content left on leave, right on enter.
+- app/ngi/page.tsx
+- app/tak/page.tsx
+- app/ttd/page.tsx
 
 ### Design
 
@@ -62,12 +68,17 @@ Subdomain: Normal link (opens in new tab)
 
 ### To Do
 
+*Priority*
+- Project linking 
+- vegan dash creation
+- Deploy to synologyn
+- cloudflare route www.domain -> www.portfolio.domain
+
+*Nice to Have*
 - include polygon animals, a deer standing waving its tail and one sitting with its head up, couple turtles in background, ‘if all goes well and is easy, maybe a fox running across screen’ 
 - in the background, mountains and a little river running from them into the foreground, river didn’t have to be animated but if it has a little shimmer of life it could be nice
-- Project linking, project subpages, 
-- Deploy to synology
-- cloudflare route www.domain -> www.portfolio.domain
- 
+- Leaf somewhere, 
+
 ### Done
 
 - ascii wind background color, Each row drifts at a slightly different speed with a sinusoidal gust pulse, so it has that layered parallax quality — faster near the top (higher altitude), slower at the bottom.

@@ -3,19 +3,19 @@
 import { createContext, useContext, useState } from 'react';
 
 interface TransitionContextType {
-  isLeaving: boolean;
-  setLeaving: (v: boolean) => void;
+  leavingDirection: 'left' | 'right' | null;
+  setLeavingDirection: (dir: 'left' | 'right' | null) => void;
 }
 
 const TransitionContext = createContext<TransitionContextType>({
-  isLeaving: false,
-  setLeaving: () => {},
+  leavingDirection: null,
+  setLeavingDirection: () => {},
 });
 
 export function TransitionProvider({ children }: { children: React.ReactNode }) {
-  const [isLeaving, setLeaving] = useState(false);
+  const [leavingDirection, setLeavingDirection] = useState<'left' | 'right' | null>(null);
   return (
-    <TransitionContext.Provider value={{ isLeaving, setLeaving }}>
+    <TransitionContext.Provider value={{ leavingDirection, setLeavingDirection }}>
       {children}
     </TransitionContext.Provider>
   );

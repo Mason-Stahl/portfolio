@@ -5,6 +5,7 @@ type Project = {
   title: string;
   description?: string;
   href: string;
+  image?: string;
 };
 
 type ProjectsSectionProps = {
@@ -39,7 +40,9 @@ function SingleLayout({ project }: { project: Project }) {
       <TransitionLink href={project.href} className="group">
         <div className="cursor-pointer">
           <div className="flex items-center gap-8 p-12 backdrop-blur-md bg-black/20 border border-white/10 hover:bg-black/30 transition-all duration-300">
-            <div className="w-40 h-40 bg-gray-700 rounded-lg flex-shrink-0" />
+            {project.image
+              ? <img src={project.image} alt={project.title} className="w-40 h-40 rounded-lg flex-shrink-0 object-cover" />
+              : <div className="w-40 h-40 bg-gray-700 rounded-lg flex-shrink-0" />}
             <div className="flex-1">
               <h3 className="text-3xl md:text-4xl font-semibold group-hover:opacity-80 transition">
                 {project.title}
@@ -64,7 +67,9 @@ function TwoLayout({ projects }: { projects: Project[] }) {
         <TransitionLink key={p.title} href={p.href} className="group">
           <div className="cursor-pointer">
             <div className="flex items-center gap-6 p-10 backdrop-blur-md bg-black/20 border border-white/10 hover:bg-black/30 transition-all duration-300">
-              <div className="w-32 h-32 bg-gray-700 rounded-lg flex-shrink-0" />
+              {p.image
+                ? <img src={p.image} alt={p.title} className="w-32 h-32 rounded-lg flex-shrink-0 object-cover" />
+                : <div className="w-32 h-32 bg-gray-700 rounded-lg flex-shrink-0" />}
               <div className="flex-1">
                 <h3 className="text-2xl md:text-3xl font-semibold group-hover:opacity-80 transition">
                   {p.title}
@@ -90,7 +95,9 @@ function GridLayout({ projects }: { projects: Project[] }) {
         <TransitionLink key={p.title} href={p.href} className="group">
           <div className="cursor-pointer">
             <div className="flex items-center gap-6 p-8 backdrop-blur-md bg-black/20 border border-white/10 hover:bg-black/30 transition-all duration-300">
-              <div className="w-28 h-28 bg-gray-700 rounded-lg flex-shrink-0" />
+              {p.image
+                ? <img src={p.image} alt={p.title} className="w-28 h-28 rounded-lg flex-shrink-0 object-cover" />
+                : <div className="w-28 h-28 bg-gray-700 rounded-lg flex-shrink-0" />}
               <div className="flex-1">
                 <h3 className="text-xl md:text-2xl font-semibold group-hover:opacity-80 transition">
                   {p.title}

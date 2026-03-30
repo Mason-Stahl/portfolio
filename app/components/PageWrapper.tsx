@@ -10,20 +10,32 @@ const useClientLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : 
 
 export default function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isLeaving, setLeaving } = useTransition();
+  const { leavingDirection, setLeavingDirection } = useTransition();
   const { targetWindSpeedRef } = useWind();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Enter animation: fires synchronously before browser paint so no flash occurs.
-  // If wind speed is elevated (arriving from a transition), slide in from right.
+  // Also restores scroll position if a section was stored before navigating away.
+  // If wind speed is elevated (arriving from a transition), slide in from the opposite side.
   useClientLayoutEffect(() => {
+    const sectionId = sessionStorage.getItem('returnSection');
+    if (sectionId) {
+      sessionStorage.removeItem('returnSection');
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+    }
+
     const el = wrapperRef.current;
     if (!el) return;
 
-    if (targetWindSpeedRef.current > 1) {
-      // Arriving from a wind transition — start off-screen right, slide to center
+    const windSpeed = targetWindSpeedRef.current;
+    if (Math.abs(windSpeed) > 1) {
+      // Arriving from a wind transition
+      // Rightward wind (negative speed) → page entered going right → slide in from left
+      // Leftward wind (positive speed)  → page entered going left  → slide in from right
+      const enterFrom = windSpeed < 0 ? '-100vw' : '100vw';
+
       el.style.transition = 'none';
-      el.style.transform = 'translateX(100vw)';
+      el.style.transform = `translateX(${enterFrom})`;
       el.style.opacity = '0';
 
       requestAnimationFrame(() => {
@@ -41,19 +53,20 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     }
 
     // Clear leaving state now that new page has mounted
-    setLeaving(false);
+    setLeavingDirection(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Leave animation: slides content left when isLeaving becomes true
+  // Leave animation: slides content in the leaving direction
   useEffect(() => {
-    if (!isLeaving) return;
+    if (!leavingDirection) return;
     const el = wrapperRef.current;
     if (!el) return;
+    const slideOut = leavingDirection === 'right' ? '100vw' : '-100vw';
     el.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
-    el.style.transform = 'translateX(-100vw)';
+    el.style.transform = `translateX(${slideOut})`;
     el.style.opacity = '0';
-  }, [isLeaving]);
+  }, [leavingDirection]);
 
   // Wind ramp-down: after each navigation wait 500ms then settle back to default.
   // This replaces the WindRampDown component — no need to add it per-page.

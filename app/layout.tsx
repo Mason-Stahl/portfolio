@@ -5,6 +5,7 @@ import { WindProvider } from "./contexts/WindContext";
 import { TransitionProvider } from "./contexts/TransitionContext";
 import AsciiSky from "./components/AsciiSky";
 import AmbientBirds from "./components/AmbientBirds";
+import MountainLayer from "./components/MountainLayer";
 import PageWrapper from "./components/PageWrapper";
 
 const geistSans = Geist({
@@ -34,6 +35,7 @@ export default function RootLayout({
           <TransitionProvider>
             {/* Fixed background layers — persist across all routes */}
             <AsciiSky />
+            <MountainLayer />
             <AmbientBirds />
             {/* Page content — slides in/out during transitions */}
             <PageWrapper>

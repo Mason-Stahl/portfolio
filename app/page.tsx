@@ -11,14 +11,14 @@ const dashboardProjects = [
 ];
 
 const aiProjects = [
-  { title: "At What Cost", href: "/awc" },
-  { title: "To The Death", href: "/ttd" },
+  { title: "At What Cost", href: "/awc", description: "Corporate Accountability Commitment Tracker and Watchdog - Innoreader, OpenRouter, Jina, Python, FastAPI, Supabase, N8N, React", image: "/images/awc/awc_logo.png" },
+  { title: "To The Death", href: "/ttd", description: "Multiplayer Real-time Board Game with Computer Opponent", image: "/images/ttd/Yin_yang.png"  },
 ];
 
 const designProjects = [
-  { title: "Root", href: "/root", description: "Testing this"},
-  { title: "TAK", href: "/tak" },
-  { title: "NGI", href: "/ngi" },
+  { title: "Root", href: "/root", description: "Music-based social media - Mobile Figma mockup", image: "/images/root/logo_final.png"},
+  { title: "TAK SafeOps", href: "/tak", description: "App designed for life and death situations - Mobile Figma mockup", image: "/images/tak/tak_logo.png" },
+  { title: "Next Gen Innovations", href: "/ngi", description: "Your platform for exploration and connection - Desktop Figma mockup", image: "/images/ngi/ngi_logo.png" },
 ];
 
 export default function PortfolioLanding() {
@@ -64,12 +64,12 @@ export default function PortfolioLanding() {
         <ProjectsSection title="AI Applications" projects={aiProjects} />
       </section>
 
-      <section id="dashboards" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
-        <ProjectsSection title="Dashboards" projects={dashboardProjects} />
-      </section>
-
       <section id="designs" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
         <ProjectsSection title="Designs" projects={designProjects} />
+      </section>
+
+      <section id="dashboards" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <ProjectsSection title="Dashboards" projects={dashboardProjects} />
       </section>
 
       <section id="footer" className="snap-start h-screen flex flex-col justify-end relative z-[2]">

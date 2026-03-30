@@ -5,7 +5,51 @@ import { usePathname } from 'next/navigation';
 import { useWind, DEFAULT_WIND_SPEED } from '../contexts/WindContext';
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const ROWS_PER_PX        = 1 / 14.85;
+const ROWS_PER_PX = 1 / 14.85;
+
+// Wisp lifecycle config — drifting horizontal bands that form and dissolve
+const WISP_CONFIG = {
+  enabled: true,  // master on/off toggle
+
+  // false = blank bands on ASCII sky (default)
+  // true  = ASCII bands on blank sky (inverted look)
+  inverted: true,
+
+  // How many wisps can exist simultaneously.
+  // default 5, maybe 8 for invert 
+  maxActive: 10,
+
+  // Time between spawn attempts (ms). Actual gap = spawnEveryMs + rand(spawnJitterMs).
+  // At wind 0.6, the sky scrolls ~52 cols/s — a 3.5s gap lets wisps feel unhurried.
+  // default 3500, 2500
+  spawnEveryMs:  1000,
+  spawnJitterMs: 20,
+
+  // How long a wisp fades in (ms) default 3000
+  fadeInMs: 3000,
+
+  // How long the wisp is fully visible. Actual = holdMs + rand(holdJitterMs)
+  holdMs:       8000,
+  holdJitterMs: 5000,
+
+  // How long a wisp fades out (ms)
+  fadeOutMs: 3000,
+
+  // Vertical half-thickness in rows (organically varies along the band).
+  // Screen is ~54 rows tall. 1.5–3.5 = thin clear streaks; 5–9 = chunky bands.
+  halfWidthMin: 1.5,
+  halfWidthMax: 3.5,
+
+  // Vertical undulation amplitude in rows. 1–2.5 is cloud-like; higher = wavy.
+  amplitudeMin: 1.0,
+  amplitudeMax: 2.5,
+
+  // Spatial frequency of undulation. Lower = longer, lazier waves.
+  // 0.04 → wavelength ~157 cols (very gentle); 0.07 → ~90 cols (moderate).
+  // At wind 0.6 the driftX phase term adds ~1.8 rad/s — keep freq low for calm feel.
+  freqMin: 0.04,
+  freqMax: 0.07,
+};
 
 const CHARS = [' ', ' ', ' ', '.', '·', '˙', '·', '.', ':', '·', '.', '~', '-', '~', '·', '.'];
 
@@ -132,6 +176,44 @@ export default function AsciiSky() {
     let driftY = 0;
     let currentWindSpeed = DEFAULT_WIND_SPEED;
 
+    // ── Wisp pool ────────────────────────────────────────────────────────────
+    interface Wisp {
+      rowFrac:   number; // vertical center as fraction of ROWS
+      amplitude: number; // vertical undulation amount in rows
+      freq:      number; // spatial frequency of undulation
+      phase:     number; // phase offset so wisps don't align
+      halfWidth: number; // base vertical half-thickness in rows
+      spawnTs:   number; // timestamp when fade-in began
+      holdUntil: number; // timestamp when fade-out begins
+      dieAt:     number; // timestamp when wisp is fully gone
+    }
+    let wisps: Wisp[] = [];
+    let nextWispAt = 0; // timestamp for next spawn check
+
+    function spawnWisp(ts: number) {
+      if (!WISP_CONFIG.enabled) return;
+      if (wisps.length >= WISP_CONFIG.maxActive) return;
+      const cfg = WISP_CONFIG;
+      const holdMs = cfg.holdMs + Math.random() * cfg.holdJitterMs;
+      wisps.push({
+        rowFrac:   0.05 + Math.random() * 0.9,
+        amplitude: cfg.amplitudeMin + Math.random() * (cfg.amplitudeMax - cfg.amplitudeMin),
+        freq:      cfg.freqMin      + Math.random() * (cfg.freqMax      - cfg.freqMin),
+        phase:     Math.random() * Math.PI * 2,
+        halfWidth: cfg.halfWidthMin + Math.random() * (cfg.halfWidthMax - cfg.halfWidthMin),
+        spawnTs:   ts,
+        holdUntil: ts + cfg.fadeInMs + holdMs,
+        dieAt:     ts + cfg.fadeInMs + holdMs + cfg.fadeOutMs,
+      });
+    }
+
+    function getWispOpacity(w: Wisp, ts: number): number {
+      const c = WISP_CONFIG;
+      if (ts < w.spawnTs + c.fadeInMs) return (ts - w.spawnTs) / c.fadeInMs;
+      if (ts < w.holdUntil) return 1;
+      return 1 - (ts - w.holdUntil) / c.fadeOutMs;
+    }
+
     function getHour(): number {
       if (simTime !== null) return simTime;
       const now = new Date();
@@ -199,12 +281,45 @@ export default function AsciiSky() {
       driftX += windPerMs * dt * globalGust;
       driftY += windPerMs * dt * 0.04;
 
+      // Spawn new wisps on a random interval
+      if (WISP_CONFIG.enabled) {
+        if (nextWispAt === 0) nextWispAt = ts + WISP_CONFIG.spawnEveryMs;
+        if (ts >= nextWispAt) {
+          spawnWisp(ts);
+          nextWispAt = ts + WISP_CONFIG.spawnEveryMs + Math.random() * WISP_CONFIG.spawnJitterMs;
+        }
+      }
+      // Reap expired wisps
+      wisps = wisps.filter(w => ts < w.dieAt);
+
       for (let r = 0; r < ROWS; r++) {
         const rowFrac = r / ROWS;
         const rowDriftX = driftX * rowSpeeds[r];
         let line = '';
         let totalDensity = 0;
         for (let c = 0; c < COLS; c++) {
+          // Check if this cell falls inside an active wisp (full-width band).
+          // The sine wave is keyed on driftX so the band flows with the wind.
+          let inWisp = false;
+          for (const w of wisps) {
+            const centerRow = w.rowFrac * ROWS + Math.sin(c * w.freq + driftX * 0.03 + w.phase) * w.amplitude;
+            const localHalf = w.halfWidth * (0.5 + 0.5 * Math.sin(c * w.freq * 0.7 + w.phase + 1.3));
+            const rowDist = Math.abs(r - centerRow);
+            if (rowDist >= localHalf) continue;
+
+            const opacity   = getWispOpacity(w, ts);
+            const rowFade   = 1 - rowDist / localHalf;
+            // Deterministic threshold — keyed on world position, no per-frame flicker
+            const threshold = noise2(c * 0.15 + driftX * 0.02, w.rowFrac * 31.7);
+            if (threshold < opacity * rowFade) { inWisp = true; break; }
+          }
+          // inverted: blank everywhere except inside wisps
+          if (WISP_CONFIG.inverted) {
+            if (!inWisp) { line += ' '; continue; }
+          } else {
+            if (inWisp) { line += ' '; continue; }
+          }
+
           const raw = fbm(c * 0.09 + rowDriftX, r * 0.14 + driftY);
           const vGrad = 1 - Math.abs(rowFrac - 0.45) * 1.2;
           const density = raw * 0.6 + vGrad * 0.4;

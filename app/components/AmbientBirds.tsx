@@ -26,7 +26,7 @@ const CONFIG = {
   
   // Timing settings
   spawnInterval: 3000,
-  maxSimultaneous: 20,
+  maxSimultaneous: 40,
   
   // Glide/pause settings
   minGlideDuration: 300,
@@ -251,7 +251,7 @@ export default function AmbientBirds() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isFirstMount = useRef(true);
-  const { isLeaving } = useTransition();
+  const { leavingDirection } = useTransition();
   const pathname = usePathname();
 
   const spawnFormation = () => {
@@ -268,15 +268,16 @@ export default function AmbientBirds() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
-  // Slide birds out to the left when a transition starts
+  // Slide birds out in the leaving direction when a transition starts
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    if (isLeaving) {
+    if (leavingDirection) {
+      const slideOut = leavingDirection === 'right' ? '100vw' : '-100vw';
       el.style.transition = 'transform 0.5s ease';
-      el.style.transform = 'translateX(-100vw)';
+      el.style.transform = `translateX(${slideOut})`;
     }
-  }, [isLeaving]);
+  }, [leavingDirection]);
 
   // On route change: snap container back, wipe all current birds, spawn a fresh group.
   // Skip the initial mount — the empty-deps effect above handles the first spawn.

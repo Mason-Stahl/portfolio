@@ -12,20 +12,27 @@ export default function TransitionLink({
   href,
   children,
   className,
+  direction = 'left',
+  scrollTo,
 }: {
   href: string;
   children: ReactNode;
   className?: string;
+  direction?: 'left' | 'right';
+  scrollTo?: string;
 }) {
   const router = useRouter();
   const { targetWindSpeedRef } = useWind();
-  const { setLeaving } = useTransition();
+  const { setLeavingDirection } = useTransition();
 
   const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    // Kick off wind gust + content slide-out simultaneously
-    targetWindSpeedRef.current = TRANSITION_WIND_SPEED;
-    setLeaving(true);
+    if (scrollTo) {
+      sessionStorage.setItem('returnSection', scrollTo);
+    }
+    // Negative wind speed = rightward gust
+    targetWindSpeedRef.current = direction === 'right' ? -TRANSITION_WIND_SPEED : TRANSITION_WIND_SPEED;
+    setLeavingDirection(direction);
     setTimeout(() => {
       router.push(href);
     }, TRANSITION_OUT_MS);
