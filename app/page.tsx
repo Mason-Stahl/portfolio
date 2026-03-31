@@ -4,8 +4,8 @@ import ScrollLink from "./components/ScrollLink";
 
 const dashboardProjects = [
   {
-    title: "Vegan Dashboard",
-    description: "Data-driven vegan insights",
+    title: "⚠️ Diet Dashboard ",
+    description: "🚧 Under Construction: 👷‍♂️🔨 Check Back Soon 🚧 - Data-driven vegan insights",
     href: "/vegan_dash",
   },
 ];
@@ -73,6 +73,7 @@ export default function PortfolioLanding() {
       </section>
 
       <section id="footer" className="snap-start h-screen flex flex-col justify-end relative z-[2]">
+        <div id="mountain-trigger" style={{ position: 'absolute', top: '10%', height: 0, width: 0, visibility: 'hidden' }} />
         <Footer />
       </section>
     </div>

@@ -69,7 +69,7 @@ Subdomain: Normal link (opens in new tab)
 ### To Do
 
 *Priority*
-- Project linking 
+- AWC / TTD Linking
 - vegan dash creation
 - Deploy to synologyn
 - cloudflare route www.domain -> www.portfolio.domain

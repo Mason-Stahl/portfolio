@@ -351,6 +351,10 @@ export default function Footer() {
           transform: `translateY(${SCENE.landscapeOffset})`,
           pointerEvents: "none",
           zIndex: 2,
+          // Clip from the top when SVG is taller than 90vh (wide screens).
+          // 90vh = distance from mountain-trigger (top: 10% of 100vh section) to bottom.
+          maxHeight: "90vh",
+          overflow: "hidden",
         }}
       >
         <div style={{ position: "relative", width: "100%" }}>
