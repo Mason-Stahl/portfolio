@@ -3,6 +3,7 @@
 import SubpageNav from '../components/SubpageNav';
 import { sidePad, imageHeight } from '../components/HorizontalGallery';
 import useBreakpoint from '../hooks/useBreakpoint';
+import { useSubpageStyles } from '../hooks/useSubpageStyles';
 
 const ttdImages: { src: string; label: string }[] = [
   { src: '/images/ttd/lobby.png', label: 'Lobby' },
@@ -13,37 +14,7 @@ const ttdImages: { src: string; label: string }[] = [
 export default function TTDPage() {
   const bp = useBreakpoint();
   const pad = sidePad[bp];
-
-  const prose: React.CSSProperties = {
-    maxWidth: '100%',
-    paddingLeft: pad,
-    paddingRight: pad,
-    lineHeight: 1.7,
-  };
-
-  const h2Style: React.CSSProperties = {
-    fontSize: bp === 'phone' ? '0.85rem' : '1.1rem',
-    fontWeight: 'bold',
-    marginTop: '3rem',
-    marginBottom: '0.5rem',
-    opacity: 0.5,
-    textTransform: 'uppercase',
-    letterSpacing: '0.1em',
-  };
-
-  const h3Style: React.CSSProperties = {
-    fontSize: bp === 'phone' ? '0.95rem' : '1.1rem',
-    fontWeight: 'bold',
-    marginTop: '1.5rem',
-    marginBottom: '0.4rem',
-    color: 'rgba(255,255,255,1)',
-  };
-
-  const pStyle: React.CSSProperties = {
-    fontSize: bp === 'phone' ? '0.8rem' : '0.95rem',
-    color: 'rgba(255,255,255,0.75)',
-    marginBottom: '1rem',
-  };
+  const { prose, h2Style, h3Style, pStyle, captionStyle } = useSubpageStyles(bp, pad);
 
   return (
     <div
@@ -86,7 +57,7 @@ Inlcudes lobbies to play with friends, and a computer bot to play against (who i
           {ttdImages.map(({ src, label }) => (
             <div key={src} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
               <img src={src} alt={label} style={{ width: '100%', height: 'auto', maxHeight: '800px', objectFit: 'contain', display: 'block' }} />
-              <p style={{ fontSize: bp === 'phone' ? '0.7rem' : '0.8rem', color: 'rgba(255,255,255,0.5)', margin: 0, textAlign: 'center' }}>{label}</p>
+              <p style={captionStyle}>{label}</p>
             </div>
           ))}
         </div>
@@ -96,7 +67,7 @@ Inlcudes lobbies to play with friends, and a computer bot to play against (who i
       <div style={{ ...prose, marginTop: '6rem' }}>
         <p style={h2Style}>Production Build</p>
         <a
-          href="watchdog.masonstahl.com"
+          href="https://tothedeath.masonstahl.com"
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: 'rgba(255, 255, 255, 0.86)', fontSize: '0.85rem', textDecoration: 'underline' }}

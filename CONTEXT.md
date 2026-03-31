@@ -71,7 +71,7 @@ Subdomain: Normal link (opens in new tab)
 *Priority*
 - AWC / TTD Linking
 - vegan dash creation
-- Deploy to synologyn
+- Deploy to synology
 - cloudflare route www.domain -> www.portfolio.domain
 
 *Nice to Have*
